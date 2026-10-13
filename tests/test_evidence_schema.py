@@ -1,3 +1,7 @@
+import hashlib
+import tempfile
+
+from src.evidence_schema import calculate_sha256
 
 import unittest
 
@@ -35,6 +39,38 @@ class TestEvidenceSchema(unittest.TestCase):
                 case_name="Sample Investigation",
             )
 
+
+    def test_sha256_matches_expected_hash(self):
+        content = b"sample forensic evidence"
+
+        with tempfile.NamedTemporaryFile(delete=False) as sample:
+            sample.write(content)
+            sample_path = sample.name
+
+        try:
+            expected_hash = hashlib.sha256(content).hexdigest()
+            actual_hash = calculate_sha256(sample_path)
+            self.assertEqual(actual_hash, expected_hash)
+        finally:
+            import os
+            os.remove(sample_path)
+
+    def test_sha256_changes_when_file_content_changes(self):
+        with tempfile.NamedTemporaryFile(delete=False) as sample:
+            sample.write(b"original evidence")
+            sample_path = sample.name
+
+        try:
+            original_hash = calculate_sha256(sample_path)
+
+            with open(sample_path, "wb") as sample:
+                sample.write(b"modified evidence")
+
+            modified_hash = calculate_sha256(sample_path)
+            self.assertNotEqual(original_hash, modified_hash)
+        finally:
+            import os
+            os.remove(sample_path)
 
 if __name__ == "__main__":
     unittest.main()
