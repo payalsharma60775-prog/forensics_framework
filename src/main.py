@@ -1,5 +1,4 @@
 
-
 import json
 from pathlib import Path
 
@@ -8,6 +7,9 @@ from src.detection_engine import (
     detect_brute_force_followed_by_success
 )
 from src.correlation_engine import correlate_alerts_with_events
+from src.feature_extraction import extract_features
+from src.anomaly_detection import detect_anomalies
+from src.timeline_engine import build_event_timeline
 
 from src.evidence_schema import (
     EvidenceRecord,
@@ -57,14 +59,14 @@ def run_investigation():
         for error in errors:
             print("-", error)
 
-    # STEP 3: Threat detection
-    print("\n[3] Running threat detection...")
+    # STEP 3: Rule-based threat detection
+    print("\n[3] Running rule-based threat detection...")
 
     alerts = detect_brute_force_followed_by_success(events)
 
-    print(f"Alerts generated: {len(alerts)}")
+    print(f"Rule-based alerts generated: {len(alerts)}")
 
-    # STEP 4: Event correlation
+    # STEP 4: Contextual event correlation
     print("\n[4] Correlating related events...")
 
     correlations = correlate_alerts_with_events(
@@ -83,7 +85,72 @@ def run_investigation():
                 f"{event['timestamp']}"
             )
 
-    # STEP 5: Generate investigation report
+    # STEP 5: Timeline reconstruction
+    print("\n[5] Reconstructing chronological timeline...")
+
+    timeline, timeline_errors = build_event_timeline(events)
+
+    print(f"Timeline events generated: {len(timeline)}")
+    print(f"Timeline errors: {len(timeline_errors)}")
+
+    if timeline_errors:
+        print("\nTimeline processing errors:")
+        for error in timeline_errors:
+            print("-", error)
+
+    print("\n--- INVESTIGATION TIMELINE (UTC) ---")
+
+    for entry in timeline:
+        print(
+            f"{entry['timestamp']} | "
+            f"{entry['event_id']} | "
+            f"{entry['event_type']} | "
+            f"User: {entry['user']} | "
+            f"Host: {entry['host']} | "
+            f"Process: {entry['process_name']}"
+        )
+
+    # STEP 6: ML feature extraction
+    print("\n[6] Extracting ML features...")
+
+    feature_rows, feature_errors = extract_features(events)
+
+    print(f"Feature rows generated: {len(feature_rows)}")
+    print(f"Feature extraction errors: {len(feature_errors)}")
+
+    if feature_errors:
+        for error in feature_errors:
+            print("-", error)
+
+    # STEP 7: ML anomaly detection
+    print("\n[7] Running Isolation Forest anomaly detection...")
+
+    anomalies, anomaly_errors = detect_anomalies(
+        events,
+        feature_rows
+    )
+
+    print(f"ML results generated: {len(anomalies)}")
+    print(f"ML processing errors: {len(anomaly_errors)}")
+
+    if anomaly_errors:
+        for error in anomaly_errors:
+            print("-", error)
+
+    anomaly_findings = [
+        result for result in anomalies
+        if result["is_anomaly"] == 1
+    ]
+
+    print(f"Anomalies identified: {len(anomaly_findings)}")
+
+    for finding in anomaly_findings:
+        print(
+            f"- Event: {finding['event_id']} | "
+            f"Score: {finding['anomaly_score']}"
+        )
+
+    # STEP 8: Generate investigation report
     report = {
         "case_id": case_id,
         "evidence": {
@@ -97,7 +164,26 @@ def run_investigation():
         "ingestion_errors": errors,
         "total_alerts": len(alerts),
         "alerts": alerts,
-        "correlations": correlations
+        "correlations": correlations,
+        "timeline": {
+            "total_events": len(timeline),
+            "processing_errors": timeline_errors,
+            "events": timeline
+        },
+        "feature_extraction": {
+            "feature_count": (
+                len(feature_rows[0])
+                if feature_rows else 0
+            ),
+            "feature_errors": feature_errors
+        },
+        "ml_analysis": {
+            "algorithm": "IsolationForest",
+            "total_events_analyzed": len(anomalies),
+            "anomaly_count": len(anomaly_findings),
+            "processing_errors": anomaly_errors,
+            "results": anomalies
+        }
     }
 
     output_path = Path(
@@ -108,12 +194,10 @@ def run_investigation():
     with output_path.open("w", encoding="utf-8") as file:
         json.dump(report, file, indent=4)
 
-    print("\n[5] Investigation report generated.")
+    print("\n[8] Investigation report generated.")
     print(f"Report location: {output_path}")
     print("\nInvestigation completed.")
 
 
 if __name__ == "__main__":
     run_investigation()
-
-
