@@ -10,6 +10,7 @@ from src.correlation_engine import correlate_alerts_with_events
 from src.feature_extraction import extract_features
 from src.anomaly_detection import detect_anomalies
 from src.timeline_engine import build_event_timeline
+from src.report_generator import generate_markdown_report
 
 from src.evidence_schema import (
     EvidenceRecord,
@@ -94,7 +95,6 @@ def run_investigation():
     print(f"Timeline errors: {len(timeline_errors)}")
 
     if timeline_errors:
-        print("\nTimeline processing errors:")
         for error in timeline_errors:
             print("-", error)
 
@@ -150,7 +150,7 @@ def run_investigation():
             f"Score: {finding['anomaly_score']}"
         )
 
-    # STEP 8: Generate investigation report
+    # STEP 8: Assemble structured investigation report
     report = {
         "case_id": case_id,
         "evidence": {
@@ -186,17 +186,32 @@ def run_investigation():
         }
     }
 
-    output_path = Path(
-        "data/processed/investigation_report.json"
-    )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    # STEP 9: Save JSON report
+    print("\n[8] Generating structured JSON report...")
 
-    with output_path.open("w", encoding="utf-8") as file:
+    output_dir = Path("data/processed")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    json_path = output_dir / "investigation_report.json"
+
+    with json_path.open("w", encoding="utf-8") as file:
         json.dump(report, file, indent=4)
 
-    print("\n[8] Investigation report generated.")
-    print(f"Report location: {output_path}")
-    print("\nInvestigation completed.")
+    print(f"JSON report saved: {json_path}")
+
+    # STEP 10: Generate human-readable Markdown report
+    print("\n[9] Generating human-readable investigation report...")
+
+    markdown_report = generate_markdown_report(report)
+
+    markdown_path = output_dir / "investigation_report.md"
+
+    with markdown_path.open("w", encoding="utf-8") as file:
+        file.write(markdown_report)
+
+    print(f"Markdown report saved: {markdown_path}")
+
+    print("\nInvestigation completed successfully.")
 
 
 if __name__ == "__main__":
