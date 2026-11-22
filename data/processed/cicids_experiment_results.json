@@ -1,0 +1,17 @@
+{
+    "dataset": "CIC-IDS2017 Friday Afternoon DDoS",
+    "records_analyzed": 10000,
+    "features_used": 78,
+    "training_records": 2969,
+    "testing_records": 3000,
+    "accuracy": 0.6203333333333333,
+    "precision": 0.8045501551189245,
+    "recall": 0.45023148148148145,
+    "f1_score": 0.577365491651206,
+    "fpr": 0.14858490566037735,
+    "fnr": 0.5497685185185185,
+    "tn": 1083,
+    "fp": 189,
+    "fn": 950,
+    "tp": 778
+}
